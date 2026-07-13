@@ -125,7 +125,7 @@ pub struct Store {
 impl Store {
     pub fn load(dir: &Path) -> Result<Self, String> {
         fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-        let path = dir.join("bridgevoice.json");
+        let path = dir.join("bee.json");
         let data = if path.exists() {
             serde_json::from_slice(&fs::read(&path).map_err(|e| e.to_string())?).unwrap_or_default()
         } else {

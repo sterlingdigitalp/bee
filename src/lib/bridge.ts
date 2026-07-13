@@ -24,10 +24,9 @@ let webSnapshot: RuntimeSnapshot = {
   dictionary: [
     { id:"dict-1", original:"next js", replacement:"Next.js", createdAt:now-86400_000 },
     { id:"dict-2", original:"typescript", replacement:"TypeScript", createdAt:now-86400_000 },
-    { id:"dict-3", original:"bridge mind", replacement:"BridgeMind", createdAt:now-86400_000 },
   ],
   stats:{ totalWords:21,totalSeconds:10.7,totalSessions:2,averageWpm:118,todayWords:11,weekWords:21 },
-  audioDevices:[{name:"MacBook Pro Microphone",isDefault:true}], version:"0.1.0",
+  audioDevices:[{name:"MacBook Pro Microphone",isDefault:true}], version:"1.0.0",
 };
 
 export async function snapshot(): Promise<RuntimeSnapshot> { return inTauri() ? invoke("get_snapshot") : structuredClone(webSnapshot); }

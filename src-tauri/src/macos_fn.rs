@@ -122,7 +122,7 @@ pub fn install(app: AppHandle) {
     let (tx, rx) = mpsc::channel::<InputEvent>();
     let event_app = app.clone();
     thread::Builder::new()
-        .name("bridgevoice-fn-dispatch".into())
+        .name("bee-fn-dispatch".into())
         .spawn(move || {
             let mut shortcut_pressed = false;
             while let Ok(event) = rx.recv() {
@@ -179,7 +179,7 @@ pub fn install(app: AppHandle) {
         .ok();
 
     thread::Builder::new()
-        .name("bridgevoice-fn-monitor".into())
+        .name("bee-fn-monitor".into())
         .spawn(move || unsafe {
             let context = Box::new(Context { tx });
             let context_ptr = Box::into_raw(context) as *mut c_void;
@@ -195,7 +195,7 @@ pub fn install(app: AppHandle) {
                 let _ = Box::from_raw(context_ptr as *mut Context);
                 let _ = app.emit(
                     "fn-monitor-unavailable",
-                    "Grant Input Monitoring permission, then restart BridgeVoice.",
+                    "Grant Input Monitoring permission, then restart Bee.",
                 );
                 return;
             }

@@ -1,4 +1,4 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 fn main() {
-    bridgevoice_clone_lib::run()
+    bee_lib::run()
 }

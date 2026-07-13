@@ -1,4 +1,6 @@
-# BridgeVoice desktop clone
+# Bee
+
+<img src="public/images/bee-icon.svg" alt="Bee app icon" width="128">
 
 A native, privacy-first dictation app built with Tauri 2, Rust, React, Whisper,
 and Parakeet. It records from a global shortcut, transcribes locally or through
@@ -37,6 +39,6 @@ global Fn capture and universal paste. Local model files are downloaded on
 demand into the app data directory. A Groq API key is optional and is stored in
 the operating system keychain.
 
-Release builds can embed an update feed with `BRIDGEVOICE_UPDATE_FEED`. The URL
+Release builds can embed an update feed with `BEE_UPDATE_FEED`. The URL
 must return JSON shaped like
-`{"version":"1.0.1","notes":"…","url":"https://…/BridgeVoice.dmg"}`.
+`{"version":"1.0.1","notes":"…","url":"https://…/Bee.dmg"}`.

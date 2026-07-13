@@ -342,6 +342,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
+name = "bee"
+version = "1.0.0"
+dependencies = [
+ "chrono",
+ "core-foundation-sys",
+ "cpal",
+ "enigo",
+ "futures-util",
+ "hound",
+ "keyring",
+ "log",
+ "regex",
+ "reqwest 0.12.28",
+ "semver",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "thiserror 2.0.18",
+ "tokio",
+ "transcribe-rs",
+ "uuid",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -465,37 +496,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "bridgevoice-clone"
-version = "1.0.0"
-dependencies = [
- "chrono",
- "core-foundation-sys",
- "cpal",
- "enigo",
- "futures-util",
- "hound",
- "keyring",
- "log",
- "regex",
- "reqwest 0.12.28",
- "semver",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "thiserror 2.0.18",
- "tokio",
- "transcribe-rs",
- "uuid",
 ]
 
 [[package]]

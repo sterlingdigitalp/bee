@@ -1,12 +1,12 @@
 [package]
-name = "bridgevoice-clone"
+name = "bee"
 version = "1.0.0"
 description = "Privacy-first desktop voice dictation"
-authors = ["BridgeVoice Clone Contributors"]
+authors = ["Sterling Digital"]
 edition = "2021"
 
 [lib]
-name = "bridgevoice_clone_lib"
+name = "bee_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

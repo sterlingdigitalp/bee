@@ -65,7 +65,7 @@ impl EngineCache {
 }
 
 pub async fn cloud(samples: &[f32], config: &AppConfig) -> Result<String, String> {
-    let key = keyring::Entry::new("BridgeVoice Clone", "groq-api-key")
+    let key = keyring::Entry::new("Bee", "groq-api-key")
         .map_err(|e| e.to_string())?
         .get_password()
         .map_err(|_| "No Groq API key configured".to_string())?;
@@ -113,7 +113,7 @@ pub async fn cloud(samples: &[f32], config: &AppConfig) -> Result<String, String
 }
 
 pub async fn enhance(text: &str, instructions: &str, mode: &str) -> Result<String, String> {
-    let key = keyring::Entry::new("BridgeVoice Clone", "groq-api-key")
+    let key = keyring::Entry::new("Bee", "groq-api-key")
         .map_err(|e| e.to_string())?
         .get_password()
         .map_err(|_| "No Groq API key configured".to_string())?;

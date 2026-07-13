@@ -483,7 +483,7 @@ fn export_history(app: AppHandle, state: State<AppState>) -> Result<String, Stri
     let s = state.store.lock().map_err(|_| "State lock failed")?;
     let contents = serde_json::to_string_pretty(&s.data.history).map_err(|e| e.to_string())?;
     let filename = format!(
-        "BridgeVoice History {}.json",
+        "Bee History {}.json",
         chrono::Local::now().format("%Y-%m-%d")
     );
     let directory = app
@@ -556,8 +556,7 @@ async fn polish_transcription(
 }
 #[tauri::command]
 fn set_groq_api_key(app: AppHandle, state: State<AppState>, key: String) -> Result<(), String> {
-    let entry =
-        keyring::Entry::new("BridgeVoice Clone", "groq-api-key").map_err(|e| e.to_string())?;
+    let entry = keyring::Entry::new("Bee", "groq-api-key").map_err(|e| e.to_string())?;
     if key.trim().is_empty() {
         let _ = entry.delete_credential();
     } else {
@@ -653,7 +652,7 @@ async fn request_permissions(app: AppHandle) -> PermissionStatus {
 #[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
     let current = app.package_info().version.to_string();
-    let Some(feed) = option_env!("BRIDGEVOICE_UPDATE_FEED") else {
+    let Some(feed) = option_env!("BEE_UPDATE_FEED") else {
         return Ok(UpdateInfo {
             current_version: current.clone(),
             latest_version: current,
@@ -796,9 +795,9 @@ pub fn run() {
             }
             use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
             use tauri::tray::TrayIconBuilder;
-            let open = MenuItem::with_id(app, "open", "Open BridgeVoice", true, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", "Open Bee", true, None::<&str>)?;
             let record = MenuItem::with_id(app, "record", "Start Recording", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit BridgeVoice", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit Bee", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(app, &[&open, &record, &sep, &quit])?;
             let mut tray = TrayIconBuilder::new()
@@ -893,5 +892,5 @@ pub fn run() {
             quit_app
         ])
         .run(tauri::generate_context!())
-        .expect("error while running BridgeVoice")
+        .expect("error while running Bee")
 }
