@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BridgeVoice",
+  "version": "1.0.0",
+  "identifier": "dev.bridgevoice.clone",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "dashboard",
+        "title": "BridgeVoice",
+        "width": 1120,
+        "height": 760,
+        "minWidth": 820,
+        "minHeight": 600,
+        "center": true,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "visible": true,
+        "resizable": true
+      },
+      {
+        "label": "widget",
+        "title": "BridgeVoice Widget",
+        "url": "index.html?window=widget",
+        "width": 220,
+        "height": 50,
+        "minWidth": 150,
+        "minHeight": 48,
+        "x": 0,
+        "y": 0,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "shadow": false,
+        "visible": true
+      }
+    ],
+    "security": { "csp": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ipc: http://ipc.localhost https://api.groq.com https://huggingface.co; img-src 'self' asset: https://asset.localhost data: blob:" }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Privacy-first voice dictation for builders",
+    "longDescription": "Turn speech into prompts, code, commits, and docs inside any desktop application using local or cloud transcription.",
+    "macOS": { "minimumSystemVersion": "12.0", "entitlements": "Entitlements.plist", "infoPlist": "Info.plist", "signingIdentity": "-" },
+    "windows": { "wix": { "language": "en-US" } }
+  }
+}
