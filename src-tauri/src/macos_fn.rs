@@ -132,7 +132,7 @@ pub fn install(app: AppHandle) {
                         let state = app.state::<super::AppState>();
                         if let Ok(mut recorder) = state.recorder.lock() {
                             if let Some(recorder) = recorder.take() {
-                                drop(recorder.stream);
+                                recorder.stop();
                                 let _ = app.emit("recording-state", "idle");
                             }
                         }

@@ -2,17 +2,33 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream};
 use serde::Serialize;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter};
 
+// cpal::Stream is !Send, so a dedicated thread owns the stream for its whole
+// life; this handle only carries Send data plus a channel to that thread.
 pub struct Recorder {
-    pub stream: Stream,
+    stop: mpsc::Sender<()>,
+    thread: JoinHandle<()>,
     pub samples: Arc<Mutex<Vec<f32>>>,
     pub sample_rate: u32,
     pub channels: u16,
     pub started: std::time::Instant,
 }
-unsafe impl Send for Recorder {}
+
+impl Recorder {
+    pub fn stop(self) {
+        let _ = self.stop.send(());
+        let _ = self.thread.join();
+    }
+}
+
+struct StreamMeta {
+    samples: Arc<Mutex<Vec<f32>>>,
+    sample_rate: u32,
+    channels: u16,
+}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,6 +58,44 @@ pub fn start(
     fallback: Option<&str>,
     gain: f32,
 ) -> Result<Recorder, String> {
+    let preferred = preferred.map(str::to_owned);
+    let fallback = fallback.map(str::to_owned);
+    let (ready_tx, ready_rx) = mpsc::channel();
+    let (stop_tx, stop_rx) = mpsc::channel();
+    let thread = thread::Builder::new()
+        .name("bee-audio-capture".into())
+        .spawn(
+            move || match open_stream(app, preferred.as_deref(), fallback.as_deref(), gain) {
+                Ok((stream, meta)) => {
+                    let _ = ready_tx.send(Ok(meta));
+                    let _ = stop_rx.recv();
+                    drop(stream);
+                }
+                Err(error) => {
+                    let _ = ready_tx.send(Err(error));
+                }
+            },
+        )
+        .map_err(|e| e.to_string())?;
+    let meta = ready_rx
+        .recv()
+        .map_err(|_| "Audio capture thread stopped unexpectedly".to_string())??;
+    Ok(Recorder {
+        stop: stop_tx,
+        thread,
+        samples: meta.samples,
+        sample_rate: meta.sample_rate,
+        channels: meta.channels,
+        started: std::time::Instant::now(),
+    })
+}
+
+fn open_stream(
+    app: AppHandle,
+    preferred: Option<&str>,
+    fallback: Option<&str>,
+    gain: f32,
+) -> Result<(Stream, StreamMeta), String> {
     let host = cpal::default_host();
     let devices: Vec<_> = host.input_devices().map_err(|e| e.to_string())?.collect();
     let mut candidates = Vec::new();
@@ -76,7 +130,11 @@ pub fn start(
     ))
 }
 
-fn start_device(app: AppHandle, device: cpal::Device, gain: f32) -> Result<Recorder, String> {
+fn start_device(
+    app: AppHandle,
+    device: cpal::Device,
+    gain: f32,
+) -> Result<(Stream, StreamMeta), String> {
     let device_name = device.to_string();
     let supported = device.default_input_config().map_err(|e| e.to_string())?;
     let sample_rate = supported.sample_rate();
@@ -128,31 +186,31 @@ fn start_device(app: AppHandle, device: cpal::Device, gain: f32) -> Result<Recor
     };
     stream.play().map_err(|e| e.to_string())?;
     let _ = app.emit("recording-device", &device_name);
-    Ok(Recorder {
+    Ok((
         stream,
-        samples,
-        sample_rate,
-        channels,
-        started: std::time::Instant::now(),
-    })
+        StreamMeta {
+            samples,
+            sample_rate,
+            channels,
+        },
+    ))
 }
 
 pub fn finish(recorder: Recorder) -> (Vec<f32>, f32) {
     let duration = recorder.started.elapsed().as_secs_f32();
-    drop(recorder.stream);
-    let raw = recorder
-        .samples
-        .lock()
-        .map(|x| x.clone())
-        .unwrap_or_default();
-    let mono = if recorder.channels <= 1 {
+    let samples = recorder.samples.clone();
+    let sample_rate = recorder.sample_rate;
+    let channels = recorder.channels;
+    recorder.stop();
+    let raw = samples.lock().map(|x| x.clone()).unwrap_or_default();
+    let mono = if channels <= 1 {
         raw
     } else {
-        raw.chunks(recorder.channels as usize)
+        raw.chunks(channels as usize)
             .map(|f| f.iter().sum::<f32>() / f.len() as f32)
             .collect()
     };
-    (resample(&mono, recorder.sample_rate, 16000), duration)
+    (resample(&mono, sample_rate, 16000), duration)
 }
 
 pub fn play_chime(rising: bool) {

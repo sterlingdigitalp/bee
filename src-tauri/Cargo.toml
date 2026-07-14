@@ -1,6 +1,6 @@
 [package]
 name = "bee"
-version = "1.0.0"
+version = "1.0.1"
 description = "Privacy-first desktop voice dictation"
 authors = ["Sterling Digital"]
 edition = "2021"

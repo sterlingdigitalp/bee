@@ -34,6 +34,13 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 npm run desktop:build
 ```
 
+On macOS, `desktop:build` selects an installed `Developer ID Application` or
+`Apple Development` certificate automatically. Set `APPLE_SIGNING_IDENTITY`
+to choose a specific identity. A stable certificate-backed signature is
+required for Accessibility permission to survive app updates; the build fails
+instead of silently falling back to an ad-hoc identity when no certificate is
+available.
+
 On macOS, grant Microphone, Input Monitoring, and Accessibility permissions for
 global Fn capture and universal paste. Local model files are downloaded on
 demand into the app data directory. A Groq API key is optional and is stored in

@@ -27,7 +27,6 @@ pub struct AppState {
     engine: Mutex<Option<transcription::EngineCache>>,
     models_dir: PathBuf,
 }
-unsafe impl Sync for AppState {}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -195,32 +194,31 @@ fn emit_state(app: &AppHandle, value: &str) {
 }
 async fn begin_recording(app: AppHandle) -> Result<(), String> {
     let state = app.state::<AppState>();
-    if state
-        .recorder
-        .lock()
-        .map_err(|_| "Recorder lock failed")?
-        .is_some()
-    {
-        return Ok(());
-    }
     let (config, show) = {
         let s = state.store.lock().map_err(|_| "State lock failed")?;
         (s.data.config.clone(), s.data.config.show_widget)
     };
-    let recorder = match audio::start(
-        app.clone(),
-        config.preferred_input_device.as_deref(),
-        config.fallback_input_device.as_deref(),
-        config.input_gain,
-    ) {
-        Ok(recorder) => recorder,
-        Err(error) => {
-            emit_state(&app, "error");
-            let _ = app.emit("recording-error", &error);
-            return Err(error);
+    {
+        // Hold the slot lock across start so concurrent triggers (Fn tap,
+        // toggle key, tray) cannot each open a stream.
+        let mut slot = state.recorder.lock().map_err(|_| "Recorder lock failed")?;
+        if slot.is_some() {
+            return Ok(());
         }
-    };
-    *state.recorder.lock().map_err(|_| "Recorder lock failed")? = Some(recorder);
+        match audio::start(
+            app.clone(),
+            config.preferred_input_device.as_deref(),
+            config.fallback_input_device.as_deref(),
+            config.input_gain,
+        ) {
+            Ok(recorder) => *slot = Some(recorder),
+            Err(error) => {
+                emit_state(&app, "error");
+                let _ = app.emit("recording-error", &error);
+                return Err(error);
+            }
+        }
+    }
     if config.recording_sound_enabled {
         audio::play_chime(true);
     }
@@ -346,10 +344,14 @@ async fn end_recording(app: AppHandle) -> Result<Option<HistoryItem>, String> {
         timestamp: chrono::Utc::now().timestamp_millis(),
         duration_seconds,
         transcription_ms: started.elapsed().as_millis(),
-        model: models::definition(&config.model)
-            .map(|m| m.name)
-            .unwrap_or("Cloud Whisper")
-            .into(),
+        model: if config.transcription_mode == "cloud" {
+            "Cloud Whisper".into()
+        } else {
+            models::definition(&config.model)
+                .map(|m| m.name)
+                .unwrap_or("Unknown model")
+                .into()
+        },
         source: config.transcription_mode.clone(),
     };
     {
@@ -363,7 +365,7 @@ async fn end_recording(app: AppHandle) -> Result<Option<HistoryItem>, String> {
     let _ = app.emit("data-changed", ());
     if !config.copy_to_clipboard {
         tokio::time::sleep(Duration::from_millis(70)).await;
-        if let Err(error) = paste_shortcut() {
+        if let Err(error) = paste_shortcut(&app).await {
             emit_state(&app, "error");
             let message = format!(
                 "Text was copied, but could not be pasted. Grant Accessibility permission: {error}"
@@ -391,7 +393,18 @@ async fn end_recording(app: AppHandle) -> Result<Option<HistoryItem>, String> {
     }
     Ok(Some(item))
 }
-fn paste_shortcut() -> Result<(), String> {
+async fn paste_shortcut(app: &AppHandle) -> Result<(), String> {
+    let (result_tx, result_rx) = tokio::sync::oneshot::channel();
+    app.run_on_main_thread(move || {
+        let _ = result_tx.send(paste_shortcut_on_main_thread());
+    })
+    .map_err(|error| error.to_string())?;
+    result_rx
+        .await
+        .map_err(|_| "Paste shortcut was cancelled before it ran".to_string())?
+}
+
+fn paste_shortcut_on_main_thread() -> Result<(), String> {
     let mut enigo = Enigo::new(&EnigoSettings::default()).map_err(|e| e.to_string())?;
     #[cfg(target_os = "macos")]
     let modifier = Key::Meta;
@@ -423,7 +436,7 @@ fn cancel_recording(app: AppHandle, state: State<AppState>) -> Result<(), String
         .map_err(|_| "Recorder lock failed")?
         .take()
     {
-        drop(rec.stream)
+        rec.stop()
     }
     emit_state(&app, "idle");
     Ok(())
@@ -631,7 +644,7 @@ async fn request_permissions(app: AppHandle) -> PermissionStatus {
                 config.fallback_input_device.as_deref(),
                 config.input_gain,
             ) {
-                drop(recorder.stream);
+                recorder.stop();
             }
         }
         if !macos_fn::accessibility_allowed() {
